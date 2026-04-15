@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Mastercard Documentation Explorer with Copilot">.
+    <title>Mastercard Docs Explorer</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- External dependencies via CDN -->
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.8/dist/purify.min.js"></script>
+
+    <!-- Syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/java.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/json.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/bash.min.js"></script> 
+</head>
+
+<body>
+<!---- Header with health status -->
+<header class="app-header">
+    <h1>Mastercard Documentation Explorer</h1>
+    <div class="health-status">
+        <button id="health-check-btn" class="btn-icon" title="Check API Health">
+            <span class="status-indicator" id="health-indicator">*</span> 
+            <span id="health-text">API Status</span>
+        </button>
+    </div>
+</header>
+
+<!---- Main application container -->
+<main class="app-container">
+<!-- Left Pane: Documentation Explor -->
+    <aside class="pane pane-left" role="region" aria-label="Documentation Explorer">
+        <div class="pane-header">
+        <h2>Documentation Explorer</h2>
+        </div>
+            <div class="pane-content">
+                <div class="form-group">
+                    <label for="service-search"> Service (searchable):</label>
+                <div class="searchable-dropdown-container">
+                <input
+                    type="text"
+                    id="service-search"
+                    class="form-control"
+                    placeholder="Type to search services..."
+                    autocomplete="off"
+                >
+                <div id="service-dropdown" class="dropdown-menu hidden"></div>
+                </div>
+                <div id="service-selected" class="selected-info hidden"></div>
+                </div>
+
+                <div class="form-group" id="custom-service-group" style="display: none;">
+                    <label for="custom-service-input">Custom Service ID:</label>
+                <input
+                    type="text"
+                    id="custom-service-input"
+                    class="form-control"
+                    placeholder="Enter service ID..."
+                >
+                </div>
+
+                <button id="load-sections-btn" class="btn btn-primary">
+                    Load Sections
+                </button>
+                <button id="clear-doc-cache-btn" class="btn btn-primary">
+                    Clear Cache Button
+                </button>
+                <div class="sections-container">
+                <div id="sections-loading" class="loading-state hidden" role="status" aria-live="polite">
+                    Loading sections...
+                </div>
+
+                <div id="sections-error" class="error-state hidden" role="alert" aria-live="assertive"></div>
+                <ul id="sections-list" class="sections-list" role="listbox" aria-label="Documentation sections">
+                    <!-- Sections will be populated here -->
+                </ul>
+            </div>
+             <summary style="cursor: pointer; font-weight: 600; padding: 8px; background:#fff0f0; border-radius: 4px; margin-bottom: 8px; border: 1px solid #ffd0d0;">
+                    Pre-load All Documentation
+                </summary>
+                <div style="padding: 8px;">
+                <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.85em;">Load all documentation from all services (slower, 84 services)</p>
+                <button id="preload-all-btn" class="btn btn-primary btn-sm">
+                    Pre-load All Documentation
+                </button>
+                <div id="preload-progress" class="preload-progress hidden">
+                    <small id="preload-status">Ready</small>
+                </d1v>
+            </d1v>
+            <!-- <details class="copilot-section">
+                <summary style="cursor: pointer; font-weight: 600; padding: 8px; background: #f0f7ff; border-radius: 4px; margin-bottom: 8px; border: 1px solid #d0e7ff;">
+                    Pre-load Service
+                </summary>
+                <div style="padding: 8px;">
+                    <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.85em;">
+                        Load all sections for the currently selected service to enable cross-section search
+                    </p>
+                    <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.8em; color: #666;">
+                        <strong>Tip:</strong> Select a service above, then click here to search across all its sections
+                    </p>
+                    <button id="preload-service-btn" class="btn btn-secondary btn-sm">
+                        Pre-load Current Service
+                    </button>
+                    <div id="service-preload-progress" class="preload-progress hidden" style="margin-top: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px solid #90caf9; box-shadow: 0 2px 4px rgba(0,0,0,05);">
+                        <small id="service-preload-status" style="display: block; color: #0066cc; line-height: 1.4;">Ready</small>
+                    </div>
+                </div>
+            </details> -->
+        </div>
+    </aside>
+    
+<!-- Right Pane: Co-Pilot Panel -->
+    <aside class="pane pane-right" role="complementary" aria-label="Co-Pilot Assistant">
+        <div class="pane-header">
+        <h2>Co-Pilot</h2>
+        </div>
+        <div class="pane-content">
+        <!-- Pre-load Service (Collapsible) -->
+            <details class="copilot-section">
+                <summary style="cursor: pointer; font-weight: 600; padding: 8px; background: #f0f7ff; border-radius: 4px; margin-bottom: 8px; border: 1px solid #d0e7ff;">
+                    Pre-load Service
+                </summary>
+                    <div style="padding: 8px;">
+                    <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.85em;">
+                        Load all sections for the currently selected service to enable cross-section search
+                    </p>
+                    <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.8em; color: #666;"></p>
+                        <strong>Tip:</strong> Select a service above, then click here to search across all its sections
+                    </p>
+                    <button id="preload-service-btn" class="btn btn-secondary btn-sm">
+                        Pre-load Current Service
+                    </button>
+                    <div id="service-preload-progress" class="preload-progress hidden" style="margin-top: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px">
+                        <small id="service-preload-status" style="display: block; color: #0066cc; line-height: 1.4;">Ready</small>
+                    </div>
+                </div>
+            </details>
+        <!-- Pre-load All Documentation (Hidden - not planning to use) -->
+            <details class="copilot-section" style="display: none;">
+                <summary style="cursor: pointer; font-weight: 600; padding: 8px; background:#fff0f0; border-radius: 4px; margin-bottom: 8px; border: 1px solid #ffd0d0;">
+                    Pre-load All Documentation
+                </summary>
+                <div style="padding: 8px;">
+                <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.85em;">Load all documentation from all services (slower, 84 services)</p>
+                <button id="preload-all-btn" class="btn btn-primary btn-sm">
+                    Pre-load All Documentation
+                </button>
+                <div id="preload-progress" class="preload-progress hidden">
+                    <small id="preload-status">Ready</small>
+                </d1v>
+                </d1v>
+            </details>
+
+        <!-- Chat Interface (Main Feature) -->
+            <div class="copilot-section" style="display: flex; flex-direction: column; flex: 1; min-height: 600px;">
+                <div class="chat-header">
+                <h3> Documentation Chat</h3>
+                <div style="display: flex; gap: 8px;">
+                    <button id="show-code-btn" class="btn-secondary btn-sm" title="Extract code" style="display: none;">
+                        &lt;/&gt; Code
+                    </button>
+                    <button id="clear-chat-btn" class="btn-secondary btn-sm" title="Clear conversation">
+                        Clear
+                    </button>
+                </div>
+                </div>
+
+                <!-- Chat Messages Container -->
+                <div id="chat-messages" class="chat-messages">
+                <div class="chat-welcome">
+                <div class="welcome-icon"></div>
+                <h4>Hi! I'm your Mastercard API Assistant</h4>
+                <p><strong>Getting started is simple:</strong></p>
+                    <ol style="text-align: left; max-width: 400px; margin: 16px auto; line-height: 1.8;">
+                    <li>Select a service from the left sidebar</li>
+                    <li>Wait a moment while I load the documentation</li>
+                    <li>Start asking questions!</li>
+                    </ol>
+                <p>I can help you with:</p>
+                <ul>
+                    <li>Integration steps and getting started guides</li>
+                    <li>Authentication and security requirements</li>
+                    <li>Code examples in multiple languages</li>
+                    <li>Troubleshooting errors and issues</li>
+                    <li>API endpoints and parameters</li>
+                    <li>Best practices and recommendations</li>
+                </ul>
+                <p class="help-text" style="margin-top: 24px; color: ☐#666;"><strong>Tip:</strong> Choose a service to start chatting</p>
+                </div>
+                </div>
+
+                <!-- Тyping Indicator -->
+                <div id="typing-indicator" class="typing-indicator hidden">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-container">
+                <textarea
+                id="chat-input"
+                class="chat-input"
+                rows="1"
+                placeholder="Ask a question about the documentation..."
+                aria-label="Chat input"
+                disabled
+                ></textarea>
+                <button id="send-btn" class="btn-send" disabled title="Send message">
+                <span>►</span>
+                </button>
+                </div>
+                <small id="chat-help-text" class="help-text" style="margin-top: 8px; display: block; text-align: center;">
+                <strong>Quick start:</strong> Select a service from the left - Start asking questions
+                </small>
+                <div id="code-only-view" class="code-only-view hidden"></div>
+            </div>
+
+        <!-- API Operations Search -->
+            <div id="api-ops-section" class="copilot-section hidden">
+            <h3>Browse API Operations</h3>
+            <p style="font-size: 0.85em; color: #666; margin: 8px 0 12px 0; line-height: 1.4;">
+            Click below to see all available endpoints • Type to filter results
+            </p>
+
+            <!-- Searchable Dropdown -->
+            <div class="searchable-dropdown-container">
+            <div class="form-group">
+            <label for="api-ops-search" class="sr-only">Browse API operations</label>
+            <input
+            type="text"
+            id="api-ops-search"
+            class="form-control"
+            placeholder="Click to view all operations..."
+            aria-label="Browse API operations"
+            autocomplete="off"
+            >
+            </div>
+
+            <div id="api-ops-dropdown" class="dropdown-menu hidden">
+            <!-- Dropdown items will appear here -->
+            </div>
+            </div>
+
+            <div id="api-ops-loading" class="loading-state hidden" role="status" aria-live="polite">
+            Loading operations...
+            </div>
+
+            <div id="api-ops-error" class="error-state hidden" role="alert" aria-live="assertive"></div>
+
+            <!-- Selected operation details -->
+            <div id="api-ops-selected" class="selected-operation hidden">
+            <!-- Selected operation details will appear here -->
+            </div>
+            </div>
+        </div>
+    </aside>
+
+</main>
+    
+    <!-- Toast notifications container -->
+    <div id="toast-container" class="toast-container" role="status" aria-live="polite" aria-atomic="true">
+        <!--- Toasts will be injected here -->
+    </div>
+
+    <!--- Application logic -->
+    <script src="app.js"></script>
+
+</body>
+</html>
