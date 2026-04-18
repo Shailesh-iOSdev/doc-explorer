@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
 app.use(cors());
-app.use (express.json());
+app.use (express.json({ limit: '2mb' }));
 app.use(express.static(path.join(__dirname, "public")));
 
 let mcpClient = null;
@@ -206,9 +206,9 @@ try {
         }
         console.log(' [Services] Found ${services.length) services');
 
-        //const topFive = services.slice(0, 5);
+        const topFive = services.slice(0, 5);
 
-        res.json({ services: services.sort() });
+        res.json({ services: topFive.sort() });
     } else {
         console.warn(' [Services] Empty response from MCP');
         res.json({ services: [] });
@@ -279,13 +279,14 @@ app.post("/api/chat", async (req, res) => {
 
     console.log('Connect chat API--', req.body);
 
-    const { question, context, conversationHistory } = req.body;
+    const { question, filteredAnswer, context, conversationHistory } = req.body;
+    console.log({ question, filteredAnswer, context, conversationHistory });
     if (!question) {
         return res.status(400).json({ error: 'missing question parameter'})
     }
 
     console.log('Using OLLAMA for AI generation');
-    const answer = await aiService.generateAnswer(question, context || [], conversationHistory || []);
+    const answer = await aiService.generateAnswer(question, filteredAnswer, context || [], conversationHistory || []);
 
     console.log('OLLAMA Response -', answer);
 

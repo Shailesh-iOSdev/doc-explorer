@@ -1,7 +1,8 @@
 const AI_PROVIDER = 'ollama';
-const AI_MODEL = 'llama3';
-const AI_MAX_TOKENS = parseInt('2000');
-const AI_TEMPERATURE = parseFloat('0.7');
+const AI_MODEL = 'llama3.2:1b';
+const AI_CODE_MODEL = 'qwen2.5-coder:1.5b'
+const AI_MAX_TOKENS = parseInt('512');
+const AI_TEMPERATURE = parseFloat('0.5');
 const OLLAMA_BASE_URL = 'http://localhost:11434';
 const REQUEST_TIMEOUT = 900000; // 15 seconds
 
@@ -51,8 +52,9 @@ const SYSTEM_PROMPT = `You are an expert Al assistant for Mastercard API integra
 // Ollama Integration (Local LLM)
 // ========
 
-async function callOllama(messages) {
+async function callOllama(messages, model) {
 
+    console.log('Model', model);
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
@@ -64,7 +66,7 @@ async function callOllama(messages) {
         'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-    model: AI_MODEL,
+    model: model,
     messages: messages,
     stream: false,
     options: {
@@ -93,7 +95,15 @@ async function callOllama(messages) {
 }
 }
 
-async function generateAnswer(question, context = [], conversationHistory = []) {
+function isCodeRequest(question = "", conversationHistory = []) {
+    const text = [question, ...conversationHistory.slice(-3).map(m => m.content || "")]
+    .join(" ")
+    .toLowerCase();
+
+    return /(code|example|generate|implementation|integrate|write a function|snippet|debug|refactor|class|api example|javascript|python|java|typescript|swift|ios|android)/i.test(text);
+}
+
+async function generateAnswer(question, filteredAnswer, context = [], conversationHistory = []) {
     // Build context from documentation
     const contextText = context.map((doc, index) => {
     return `
@@ -129,14 +139,22 @@ async function generateAnswer(question, context = [], conversationHistory = []) 
     Use this documentation to provide accurate, specific answers. Always cite which section the information comes from.`
     });
     }
-            // Add conversation history
+    // Add conversation history
+    if (recentHistory.length > 0) {
     recentHistory.forEach(msg => { 
         messages.push({
     role: msg.role = 'user' ? 'user' : 'assistant',
     content: msg.content
     });
     });
+    }
 
+    if (filteredAnswer) {
+        messages.push({
+            role: 'assistant',
+            content: filteredAnswer
+        })
+    }
 
     // Add current question
     messages.push({
@@ -144,8 +162,10 @@ async function generateAnswer(question, context = [], conversationHistory = []) 
     content: question
     });
     // Call appropriate AI provider
-    let answer = await callOllama(messages);
+    const selectedModel = isCodeRequest(question, conversationHistory) ? AI_CODE_MODEL : AI_MODEL; 
+    let answer = await callOllama(messages, selectedModel);
     return answer;
+
 }
 
 function getConfig() {

@@ -822,6 +822,17 @@ pre code.hljs {
     display: block;
 }
 
+pre, code {
+    font-family: 'Consolas', 'Monaco', 'Fira Mono', monospace;
+    white-space: pre;
+    background: #f5f5f5;
+    padding: 8px;
+    border-radius: 4px;
+    overflow-x: auto;
+    tab-size: 4;
+    -moz-tab-size: 4;
+}
+
 /* Enhanced code block styles in content */
 #content-rendered pre {
 position: relative;
@@ -836,12 +847,6 @@ display: block;
 padding: var(--spacing-mp);
 overflow-x: auto;
 font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-font-size: 14px;
-line-height: 1.6;
-color: #d4d4d4;
-}
-
-#content-rendered pre code {
 font-size: 14px;
 line-height: 1.6;
 color: #d4d4d4;

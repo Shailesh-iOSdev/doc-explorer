@@ -59,31 +59,32 @@
 
                 <div class="form-group" id="custom-service-group" style="display: none;">
                     <label for="custom-service-input">Custom Service ID:</label>
-                <input
-                    type="text"
-                    id="custom-service-input"
-                    class="form-control"
-                    placeholder="Enter service ID..."
-                >
+                    <input
+                        type="text"
+                        id="custom-service-input"
+                        class="form-control"
+                        placeholder="Enter service ID..."
+                    >
+                    <div style="padding: 8px;">
+                    <button id="load-section-btn" class="btn btn-primary btn-sm">
+                    Load Sections 
+                    </button>
+                    </div>
                 </div>
-
-                <button id="load-sections-btn" class="btn btn-primary">
-                    Load Sections
-                </button>
-                <button id="clear-doc-cache-btn" class="btn btn-primary">
-                    Clear Cache Button
-                </button>
+                <div id="service-preload-progress" class="service-preload-progress" style="margin-top: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px">
+                    <small id="service-preload-status" style="display: block; color: #0066cc; line-height: 1.4;">Service section - Ready</small>
+                </div>
                 <div class="sections-container">
-                <div id="sections-loading" class="loading-state hidden" role="status" aria-live="polite">
-                    Loading sections...
-                </div>
+                    <div id="sections-loading" class="loading-state hidden" role="status" aria-live="polite">
+                        Loading sections...
+                    </div>
 
-                <div id="sections-error" class="error-state hidden" role="alert" aria-live="assertive"></div>
-                <ul id="sections-list" class="sections-list" role="listbox" aria-label="Documentation sections">
-                    <!-- Sections will be populated here -->
-                </ul>
-            </div>
-             <summary style="cursor: pointer; font-weight: 600; padding: 8px; background:#fff0f0; border-radius: 4px; margin-bottom: 8px; border: 1px solid #ffd0d0;">
+                    <div id="sections-error" class="error-state hidden" role="alert" aria-live="assertive"></div>
+                    <ul id="sections-list" class="sections-list" role="listbox" aria-label="Documentation sections">
+                        <!-- Sections will be populated here -->
+                    </ul>
+                </div>
+                <summary style="cursor: pointer; font-weight: 600; padding: 8px; background:#fff0f0; border-radius: 4px; margin-bottom: 8px; border: 1px solid #ffd0d0;">
                     Pre-load All Documentation
                 </summary>
                 <div style="padding: 8px;">
@@ -91,10 +92,13 @@
                 <button id="preload-all-btn" class="btn btn-primary btn-sm">
                     Pre-load All Documentation
                 </button>
-                <div id="preload-progress" class="preload-progress hidden">
-                    <small id="preload-status">Ready</small>
-                </d1v>
-            </d1v>
+                <button id="clear-doc-cache-btn" class="btn btn-primary btn-sm">
+                    Clear Cache Button
+                </button>
+            </div>
+            <div id="preload-progress" class="preload-progress" style="margin-top: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px">
+                    <small id="preload-status" style="display: block; color: #0066cc; line-height: 1.4;">All section - Ready</small>
+            </div>
             <!-- <details class="copilot-section">
                 <summary style="cursor: pointer; font-weight: 600; padding: 8px; background: #f0f7ff; border-radius: 4px; margin-bottom: 8px; border: 1px solid #d0e7ff;">
                     Pre-load Service
@@ -114,6 +118,7 @@
                     </div>
                 </div>
             </details> -->
+        </div>
         </div>
     </aside>
     
@@ -138,7 +143,7 @@
                     <button id="preload-service-btn" class="btn btn-secondary btn-sm">
                         Pre-load Current Service
                     </button>
-                    <div id="service-preload-progress" class="preload-progress hidden" style="margin-top: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px">
+                    <div id="service-preload-progress" class="preload-progress" style="margin-top: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px">
                         <small id="service-preload-status" style="display: block; color: #0066cc; line-height: 1.4;">Ready</small>
                     </div>
                 </div>
@@ -155,8 +160,8 @@
                 </button>
                 <div id="preload-progress" class="preload-progress hidden">
                     <small id="preload-status">Ready</small>
-                </d1v>
-                </d1v>
+                </div>
+                </div>
             </details>
 
         <!-- Chat Interface (Main Feature) -->

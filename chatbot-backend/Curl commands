@@ -1,0 +1,12 @@
+// Check if ollama working
+//curl http://localhost:11434/api/tag
+
+// Test the AI endpoint directly
+//curl -X POST http://localhost:5055/api/chat \
+//-H "Content-Type: application/json" \
+//-d '{
+//"question": "How do I authenticate?",
+//"context": [{"title": "Auth Guide", "content": "Authentication uses OAuth 2.0..."}]
+//'}
+
+

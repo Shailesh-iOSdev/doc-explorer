@@ -8,6 +8,7 @@ echo "============================"
 # Check Python version
 echo " Checking Python version..."
 python3 --version
+
 if ! command -v python3 &> /dev/null; then
     echo " Python 3 is not installed"
     exit 1

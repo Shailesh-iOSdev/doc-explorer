@@ -18,6 +18,7 @@ currentSection: null,
 sections: [],
 apiOperations: [],
 allApiOperations: [], // Store unfiltered list
+conversationHistory: [],
 selectedSectionIndex: -1,
 allDocumentation: [], // Store all pre-loaded documentation content
 isPreloaded: false, // Track if all documentation has been pre-loaded
@@ -92,6 +93,13 @@ function showToast(message, type = 'info') {
     });
 }
 
+function appendToConversation(role, content) {
+    if (!content || !String(content).trim()) return;
+    state.conversationHistory.push({role, content: String(content)});
+    if (state.conversationHistory.length > 20) {
+        state.conversationHistory = state.conversationHistory.slice(-20);
+    }
+}
 
 async function checkHealth() {
     const indicator = document.getElementById('health-indicator');
@@ -339,7 +347,47 @@ async function loadSectionContent(serviceId, sectionId) {
     }
 }
 
-    function extractCodeBlocks(markdown) {
+function renderMarkdown(markdown) {
+    if (!markdown) return '';
+
+    try {
+        // Configure marked for better rendering
+        marked.setOptions({
+        breaks: true,
+        gfm: true,
+        headerIds: true,
+        mangle: false,
+        highlight: function(code, lang) {
+        // Apply syntax highlighting if hljs is available
+        if (window.hljs && lang) {
+            try {
+                return hljs.highlight(code, { language: lang }).value;
+            } catch (e) {
+                console.warn('Highlight error:', e);
+            }
+        }
+        return code;
+        }
+        });
+        const html = marked.parse(markdown);
+        const sanitized = DOMPurify.sanitize(html, {
+        ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', ,'h6' ,'p', 'ul', 'ol', 'li',
+        'a', 'code', 'pre', 'strong', 'em', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'br', 'hr', 'img', 'span'],
+        ALLOWED_ATTR: ['href', 'title', 'alt', 'src', 'class', 'id']
+        });
+        return sanitized;
+    } catch (error) {
+        console.error('Markdown rendering error:', error);
+        return `<p class="error">Error rendering markdown: ${error.message}</p>`;
+    }
+}
+
+function extractCodeBlocks(markdown) {
+  if (typeof markdown !== 'string') {
+        console.error('extractCodeBlocks: Expected markdown to be string but got', typeof markdown, markdown);
+        return [];
+    }
+
     if (!markdown) return [];
 
     const codeBlockPattern = /```(\W+)?\n([\s\S]*?)```/g;
@@ -469,7 +517,7 @@ function setupServiceDropdown() {
             customItem.innerHTML = `
             <div style="display: flex; flex-direction: column; gap: 2px;">
                 <span style="font-weight 600; color: #666;"> Custom Service </span>
-                <span style="font-size: 85em; color: ■#999;">Enter a custom service ID</span>
+                <span style="font-size: 0.85em; color: ■#999;">Enter a custom service ID</span>
             </div>
             `;
             customItem.addEventListener('click', () => {
@@ -755,6 +803,7 @@ async function preloadServiceDocumentation(serviceId) {
         showToast(`Failed to pre-load service documentation: ${error.message}`, 'error');
     } finally {
         preloadBtn.disabled = false;
+        statusEl.disabled = false;
     }
 }
 
@@ -842,13 +891,17 @@ async function handleAskQuestion(question) {
         throw new Error('Could not fetch section content');
         }
 
+        let markdownContent = data.body;
+        if (typeof markdownContent !== 'string') {
+        console.error('handleAskQuestion: Expected markdown to be string but got', typeof markdown, markdown);
+        markdownContent = String(markdownContent || '');
+        }
 
         const context = [{
             title: state.currentSection.title || state.currentSection.id,
             link: data.sectionLink || '#',
-            content: data.body.substring(0, 3000)
+            content: markdownContent.substring(0, 3000)
         }];
-        const aiAnswer = await callAIService(question, context);
 
         console.log('Generated AI answer:', aiAnswer);
         console.log('Answer AI length:', aiAnswer.length);
@@ -859,7 +912,9 @@ async function handleAskQuestion(question) {
 
         
         // Generate answer using ennanced Copilot-like generation
-        const answer = generateCopilotAnswer(question, data.body);
+        const answer = generateCopilotAnswer(question, markdownContent);
+
+        const aiAnswer = await callAIService(question, answer , context, state.conversationHistory.slice(-10));
 
         //console.log('Generated answer:', answer);
         //console.log('Answer length:', answer.length);
@@ -1039,7 +1094,10 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
             // Generate follow-up questions
             const followUps = generateFollowUpQuestions(question, questionType, keywordData.original);
 
-            const aiAnswer = await callAIService(question, [fullAnswer]);
+            console.log('conversation history length - ',state.conversationHistory.length)
+            const aiAnswer = await callAIService(question, fullAnswer ,[], state.conversationHistory.slice(-10));
+            appendToConversation('user', question);
+            appendToConversation('assistant', aiAnswer);
             // Hide typing and show answer
             hideTypingIndicator();
             addChatMessage('assistant', aiAnswer, sources, followUps);
@@ -1410,8 +1468,9 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
 
         // Generate follow-up questions (using variables from function start)
         const followUps = generateFollowUpQuestions (question, questionType, keywordData.original);
+        console.log('conversation history length - ',state.conversationHistory.length)
 
-        const aiAnswer = await callAIService(question, [fullAnswer]);
+        const aiAnswer = await callAIService(question, fullAnswer, [], state.conversationHistory.slice(-10));
         // Hide typing and show answer
         hideTypingIndicator();
         addChatMessage('assistant', aiAnswer, sources, followUps);
@@ -1425,11 +1484,16 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
 }
 
 function findRelevantCodeBlocks(question, codeBlocks, markdown, keywords) {
+    
+    if (typeof markdown !== 'string') {
+        console.error('findRelevantCodeBlocks: Expected markdown to be string but got', typeof markdown, markdown);
+        return [];
+    }
+
     if (codeBlocks.length === 0) return [];
 
     // If only 1-2 blocks, return them all
     if (codeBlocks. length <= 2) return codeBlocks;
-
     const lowerQuestion = question.toLowerCase();
 
     // Score each code block based on relevance
@@ -1796,7 +1860,7 @@ bubble.appendChild(sourcesEl);
 }
 
 // Add follow-up suggestions if assistant message
-if (role == 'assistant' && followUps.length > 0) {
+if (role === 'assistant' && followUps.length > 0) {
 const followUpsEl = document.createElement('div');
 followUpsEl.className = 'chat-followups';
 
@@ -1828,9 +1892,9 @@ chatMessages.appendChild(messageEl);
 console.log(` ${role} message appended to chat, total messages:`, chatMessages.children.length);
 
 // Apply syntax highlighting and add copy buttons
-if (role == 'assistant') {
+if (role === 'assistant') {
 applySyntaxHighlighting(bubble);
-addCopyButtonsToCodeBlocks (bubble);
+addCopyButtonsToCodeBlocks(bubble);
 }
 
 //-Auto-scroll to bóttom
@@ -1856,7 +1920,9 @@ document.getElementById('typing-indicator').classList.add('hidden');
 }
 
 function addCopyButtonsToCodeBlocks(container) {
+    console.log('In addCopyButtonsToCodeBlocks')
     const codeBlocks = container.querySelectorAll('pre code');
+
     codeBlocks.forEach((codeBlock) => {
     const pre = codeBlock.parentElement;
     if (pre.querySelector('.copy-btn')) return; // Already has button
@@ -1868,7 +1934,7 @@ function addCopyButtonsToCodeBlocks(container) {
 
     button.addEventListener('click', async () => {
     try {
-        await navigator.clipboard.writeText(codeBlockestextContent);
+        await navigator.clipboard.writeText(codeBlock.textContent);
     button.textContent = 'Copied!';
     setTimeout(() =>{
     button.textContent = 'Copy';
@@ -1881,6 +1947,7 @@ function addCopyButtonsToCodeBlocks(container) {
     pre.appendChild(button);
     });
 }
+
 function applySyntaxHighlighting(container) {
     if (!window.hljs) return;
 
@@ -1912,6 +1979,7 @@ function clearChat() {
     <p class="help-text">Select a section or pre-load documentation above to get started</p>
     </div>
     `;
+    state.conversationHistory = [];
 }
 
 function createTFIDFVector(text, idf) {
@@ -2028,6 +2096,10 @@ function stemWord(word) {
 }
 
 function generateCopilotAnswer(question, markdown) {
+      if (typeof markdown !== 'string') {
+        console.error('generateCopilotAnswer: Expected markdown to be string but got', typeof markdown, markdown);
+        return "Unable to generate answer from documentation content";
+    }
     const questionType = detectQuestionType(question);
     const keywordData = extractEnhancedKeywords(question);
 
@@ -2236,6 +2308,11 @@ const SYNONYM_MAP = {
 };
 
 function answerFromMarkdown(question, markdown) {
+      if (typeof markdown !== 'string') {
+        console.error('answerFromMarkdown: Expected markdown to be string but got', typeof markdown, markdown);
+        return "Unable to process documentation content. Please try again";
+    }
+
     // Extract enhanced keywords with stemming and synonyms
     const keywordData = extractEnhancedKeywords(question);
 
@@ -2291,9 +2368,10 @@ function answerFromMarkdown(question, markdown) {
 
 
 
-async function callAIService(question, context = [], conversationHistory = []) {
+async function callAIService(question, filteredAnswer, context = [], conversationHistory = []) {
     try {
         console.log(`Calling AI service with ${context.length} context documents`);
+        console.log(`Calling AI service with filtered answer ${filteredAnswer}`);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
@@ -2305,6 +2383,7 @@ async function callAIService(question, context = [], conversationHistory = []) {
             },
             body: JSON.stringify({
                 question,
+                filteredAnswer,
                 context,
                 conversationHistory
             }),
@@ -2322,7 +2401,7 @@ async function callAIService(question, context = [], conversationHistory = []) {
 
         const data = await response.json();
         console.log('API Chat Response - ', data.answer.length);
-        return data.answer;
+        return data.answer || '';
     } catch(error) {
         console.error('AI Service error', error);
         throw error;
@@ -2464,9 +2543,9 @@ async function preloadAllDocumentation() {
         }
 
         // Hide progress after 3 seconds
-        setTimeout(() => {
-        progressEl.classList.add('hidden');
-        }, 3000);
+        // setTimeout(() => {
+        // progressEl.classList.add('hidden');
+        // }, 3000);
 
     } catch (error) {
         console.error('Error pre-loading documentation:', error);
@@ -2474,6 +2553,7 @@ async function preloadAllDocumentation() {
         showToast(`Failed to pre-load documentation: $(error.message}`, 'error');
         } finally {
         preloadBtn.disabled = false;
+        statusEl.disabled = false;
     }
 }
 
@@ -2613,7 +2693,7 @@ async function init() {
     // Chat has its own clear-chat-btn and code is displayed inline
 
     // Load sections button
-    document.getElementById('load-sections-btn').addEventListener('click', () => {
+    document.getElementById('load-section-btn').addEventListener('click', () => {
         let serviceId = state.currentService;
 
         // If custom is selected, use the custom input value
@@ -2660,11 +2740,6 @@ async function init() {
     sendBtn.disabled = true; 
     chatInput.disabled = true;
 
-    document.getElementById('clear-doc-cache-btn').addEventListener('click', () => {
-        localStorage.removeItem('allDocumentation');
-        localStorage.removeItem('isPreloaded');
-        showToast('Documentation cache cleared', 'info');
-    });
 
     try {
         console.log('Checking isPreloaded', state.isPreloaded);
@@ -2776,6 +2851,17 @@ async function init() {
 
     // Pre-load all documentation button
     document.getElementById('preload-all-btn').addEventListener('click', preloadAllDocumentation);
+
+    document.getElementById('clear-doc-cache-btn').addEventListener('click', () => {
+        localStorage.removeItem('allDocumentation');
+        localStorage.removeItem('isPreloaded');
+        showToast('Documentation cache cleared', 'info');
+        console.log('Clear doc cache');
+        const serviceStatusEl = document.getElementById('service-preload-status');
+        serviceStatusEl.textContent = `Ready`;
+        const statusEl = document.getElementById('preload-status');
+        statusEl.textContent = `Ready`;
+    });
 
     // Setup searchable dropdown for API operations 
     //setupApiOperationsDropdown();
