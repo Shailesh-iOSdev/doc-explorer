@@ -1003,8 +1003,8 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
             });
 
             // Take top sentences based on vector score
-            const topSentences = sentences.slice(0, Math.max(3, Math.floor(6 / vectorResults.length)));
-            allSentences.push(...topSentences);
+            //const topSentences = sentences.slice(0, Math.max(3, Math.floor(6 / vectorResults.length)));
+            allSentences.push(...sentences);
 
             // Add citation
             const citationKey = result.metadata.serviceId + '::' + result.title;
@@ -1045,7 +1045,8 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
             introduction = "Based on the documentation:\n\n";
             }
 
-            const answerText = allSentences.slice(0, 6).join('. ') + '.';
+            const answerText = allSentences
+            //.slice(0, 6).join('. ') + '.';
 
             // Include code examples if appropriate
             let codeExamples = '';
@@ -1766,7 +1767,7 @@ async function handleAskQuestionGlobalVersion1(question, documentationPool, scop
 }
 
 function addChatMessage(role, content, sources = [], followUps = []) {
-console. log(` Adding ${role} message:`, content?.substring(0, 100));
+console.log(` Adding ${role} message:`, content?.substring(0, 100));
 
 const chatMessages = document.getElementById('chat-messages');
 

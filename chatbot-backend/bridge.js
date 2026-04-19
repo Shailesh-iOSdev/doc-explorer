@@ -278,19 +278,24 @@ app.post("/api/chat", async (req, res) => {
     try {
 
     console.log('Connect chat API--', req.body);
+    const body = req.body || {};
+    const question = String(body.question || '').trim();
+    const filteredAnswer = String(body.filteredAnswer || '').trim();
+    const context = Array.isArray(body.context) ? body.context : []
+    const conversationHistory = Array.isArray(body.conversationHistory) ? body.conversationHistory :[]
 
-    const { question, filteredAnswer, context, conversationHistory } = req.body;
-    console.log({ question, filteredAnswer, context, conversationHistory });
     if (!question) {
         return res.status(400).json({ error: 'missing question parameter'})
     }
-
+    // const { question, filteredAnswer, context, conversationHistory } = req.body;
+    console.log({ question, filteredAnswer, context, conversationHistory });
+   
     console.log('Using OLLAMA for AI generation');
     const answer = await aiService.generateAnswer(question, filteredAnswer, context || [], conversationHistory || []);
 
     console.log('OLLAMA Response -', answer);
 
-    res.json({ answer })
+    res.json({ answer, provider: aiService.getConfig().provider, model: aiService.getConfig().model });
 
     } catch (e) {
         console.log('Ollama error', e);
@@ -307,8 +312,11 @@ app.post("/api/chat", async (req, res) => {
 app.get ("/api/chat/config", (req, res) => {
     const config = aiService.getConfig();
     res.json ({
-        ...config,
+        provider: config.provider,
+        model: config.model,
         configured: true,
+        maxTokens: config.maxTokens,
+        temperature: config.temperature,
         message: 'Ollama AI service enabled'
     });
 });
