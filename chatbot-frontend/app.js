@@ -795,7 +795,7 @@ async function preloadServiceDocumentation(serviceId) {
         // Keep progress visible as a persistent badge showing preload is active
         // Don't hide it - it serves as an indicator that service is preloaded
         statusEl.style.color = '#22c55e';
-        statusEl.style.fontWeight = '900';
+        statusEl.style.fontWeight = '600';
 
     } catch (error) {
         console.error('Error pre-loading service documentation:', error);
@@ -959,7 +959,7 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
         // Try vector search first if available
         if (state.usingVectorSearch && state.vectorSearchIndexed) {
             console.log(' Using vector search for contextual understanding...');
-            const vectorResults = await vectorSearch(question, 8, 0.25);
+            const vectorResults = await vectorSearch(question, 3, 0.25);
 
             if (vectorResults && vectorResults.length > 0) {
             console.log(`Vector search found ${vectorResults.length} results`);
@@ -1003,8 +1003,8 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
             });
 
             // Take top sentences based on vector score
-            //const topSentences = sentences.slice(0, Math.max(3, Math.floor(6 / vectorResults.length)));
-            allSentences.push(...sentences);
+            const topSentences = sentences.slice(0, Math.max(3, Math.floor(10 / vectorResults.length)));
+            allSentences.push(...topSentences);
 
             // Add citation
             const citationKey = result.metadata.serviceId + '::' + result.title;
@@ -1045,8 +1045,7 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
             introduction = "Based on the documentation:\n\n";
             }
 
-            const answerText = allSentences
-            //.slice(0, 6).join('. ') + '.';
+            const answerText = allSentences.slice(0, 10).join('. ') + '.';
 
             // Include code examples if appropriate
             let codeExamples = '';

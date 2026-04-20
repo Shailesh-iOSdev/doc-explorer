@@ -206,9 +206,9 @@ try {
         }
         console.log(' [Services] Found ${services.length) services');
 
-        const topFive = services.slice(0, 5);
+        //const topFive = services.slice(0, 5);
 
-        res.json({ services: topFive.sort() });
+        res.json({ services: services.sort() });
     } else {
         console.warn(' [Services] Empty response from MCP');
         res.json({ services: [] });
