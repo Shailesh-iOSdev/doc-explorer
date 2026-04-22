@@ -23,6 +23,13 @@ cd chatbot-frontend && npm install &&  cd ..
 cd vector-search
 ./setup.sh
 cd..
+
+NOTES:
+# If there is any issue running set up please install packages mentioned in requirements.txt
+# Supporting python version
+Python 3.11.7
+# Supporting npm version
+11.11.0
 ```
 
 ### 2. Manual Start (3 terminal)

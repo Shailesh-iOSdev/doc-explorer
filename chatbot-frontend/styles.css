@@ -842,14 +842,14 @@ margin: var(--spacing-md) 0;
 overflow: hidden;
 }
 
-#content-rendered pre code {
+#content-rendered pre, code {
 display: block;
 padding: var(--spacing-mp);
 overflow-x: auto;
 font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
 font-size: 14px;
 line-height: 1.6;
-color: #d4d4d4;
+color: #1e1e1e;
 }
 
 .content-raw pre {
@@ -862,7 +862,7 @@ white-space: pre-wrap;
 word-wrap: break-word;
 }
 
-content-raw code {
+.content-raw code {
 font-family: 'Monaco', 'Consolas', monospace;
 font-size: var(--font-size-sm);
 }
