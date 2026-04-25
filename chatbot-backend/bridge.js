@@ -290,15 +290,15 @@ app.post("/api/chat", async (req, res) => {
     // const { question, filteredAnswer, context, conversationHistory } = req.body;
     console.log({ question, filteredAnswer, context, conversationHistory });
    
-    console.log('Using OLLAMA for AI generation');
+    console.log(`Using LLM for AI generation`);
     const answer = await aiService.generateAnswer(question, filteredAnswer, context || [], conversationHistory || []);
 
-    console.log('OLLAMA Response -', answer);
+    console.log(` LLM Response - ${answer} `);
 
     res.json({ answer, provider: aiService.getConfig().provider, model: aiService.getConfig().model });
 
     } catch (e) {
-        console.log('Ollama error', e);
+        console.log(`LLM error`, e);
         res.status(500).json({ error: String(e) });
     }
         

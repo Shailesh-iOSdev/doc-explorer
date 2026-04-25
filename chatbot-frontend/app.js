@@ -1508,7 +1508,7 @@ function findRelevantCodeBlocks(question, codeBlocks, markdown, keywords) {
     const match = markdown.match(codePattern);
     let context = '';
     if (match) {
-        const startIndex = markdown.index0f(match[0]);
+        const startIndex = findInMarkdown(markdown, match[0])
         const contextStart = Math.max(0, startIndex - 200);
         const contextEnd = Math.min(markdown.length, startIndex + block.code.length + 200);
         context = markdown.substring(contextStart, contextEnd).toLowerCase();
@@ -1548,6 +1548,18 @@ function findRelevantCodeBlocks(question, codeBlocks, markdown, keywords) {
     .slice(0, 2)
     .sort((a, b) => a.index - b.index) // Maintain original order
     .map(item => item.block);
+}
+
+function findInMarkdown(markdown, search) {
+    // Validate input
+    if (typeof markdown !== 'string') {
+        throw new TypeError(`Expected markdown to be a string, got ${typeof markdown}`);
+    }
+    if (typeof search !== 'string') {
+        throw new TypeError(`Expected search to be a string, got ${typeof search}`);
+    }
+
+    return markdown.indexOf(search);
 }
 
 function generateFollowUpQuestions(question, questionType, keywords = []) {
