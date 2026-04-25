@@ -96,8 +96,8 @@ function showToast(message, type = 'info') {
 function appendToConversation(role, content) {
     if (!content || !String(content).trim()) return;
     state.conversationHistory.push({role, content: String(content)});
-    if (state.conversationHistory.length > 20) {
-        state.conversationHistory = state.conversationHistory.slice(-20);
+    if (state.conversationHistory.length > 10) {
+        state.conversationHistory = state.conversationHistory.slice(-10);
     }
 }
 
@@ -1095,7 +1095,7 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
             const followUps = generateFollowUpQuestions(question, questionType, keywordData.original);
 
             console.log('conversation history length - ',state.conversationHistory.length)
-            const aiAnswer = await callAIService(question, fullAnswer ,[], state.conversationHistory.slice(-10));
+            const aiAnswer = await callAIService(question, fullAnswer ,[], state.conversationHistory);
             appendToConversation('user', question);
             appendToConversation('assistant', aiAnswer);
             // Hide typing and show answer
@@ -1470,10 +1470,13 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
         const followUps = generateFollowUpQuestions (question, questionType, keywordData.original);
         console.log('conversation history length - ',state.conversationHistory.length)
 
-        const aiAnswer = await callAIService(question, fullAnswer, [], state.conversationHistory.slice(-10));
+        const aiAnswer = await callAIService(question, fullAnswer, [], state.conversationHistory);
+        appendToConversation('user', question);
+        appendToConversation('assistant', aiAnswer);
         // Hide typing and show answer
         hideTypingIndicator();
         addChatMessage('assistant', aiAnswer, sources, followUps);
+        
 
     } catch (error) {
         console.error('Error generating global answer:', error);
