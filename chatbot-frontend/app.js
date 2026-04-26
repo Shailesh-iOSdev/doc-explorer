@@ -371,7 +371,7 @@ function renderMarkdown(markdown) {
         });
         const html = marked.parse(markdown);
         const sanitized = DOMPurify.sanitize(html, {
-        ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', ,'h6' ,'p', 'ul', 'ol', 'li',
+        ALLOWED_TAGS: ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'ul', 'ol', 'li',
         'a', 'code', 'pre', 'strong', 'em', 'blockquote', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'br', 'hr', 'img', 'span'],
         ALLOWED_ATTR: ['href', 'title', 'alt', 'src', 'class', 'id']
         });
@@ -390,13 +390,16 @@ function extractCodeBlocks(markdown) {
 
     if (!markdown) return [];
 
-    const codeBlockPattern = /```(\W+)?\n([\s\S]*?)```/g;
+    // const codeBlockPattern = /```(\W+)?\n([\s\S]*?)```/g;
+    // const codeBlockPattern = /```([a-zA-Z0-9_+-]*)[ \t]*\n([\s\S]*?)```/g;
+    const codeBlockPattern = /```([a-zA-Z0-9_+-]+)?\n([\s\S]*?)```/g;
+
     const blocks = [];
     let match;
 
     while ((match = codeBlockPattern.exec(markdown)) != null) {
     blocks.push({
-    language: match[1] || 'text',
+    language: (match[1] || 'text').toLowerCase().trim(),
     code: match[2].trim()
     });
     }
@@ -1781,142 +1784,142 @@ async function handleAskQuestionGlobalVersion1(question, documentationPool, scop
 }
 
 function addChatMessage(role, content, sources = [], followUps = []) {
-console.log(` Adding ${role} message:`, content?.substring(0, 100));
+    console.log(` Adding ${role} message:`, content?.substring(0, 100));
 
-const chatMessages = document.getElementById('chat-messages');
+    const chatMessages = document.getElementById('chat-messages');
 
-if (!chatMessages){
-console.error('chat-messages element not found!');
-return null;
-}
+    if (!chatMessages){
+    console.error('chat-messages element not found!');
+    return null;
+    }
 
-// Remove welcome message if present
-const welcome = chatMessages.querySelector('.chat-welcome');
-if (welcome) {
-welcome.remove();
-console.log('Removed welcome message');
-}
-// Create message element
-const messageEl = document.createElement('div');
-messageEl.className = `chat-message ${role}`;
+    // Remove welcome message if present
+    const welcome = chatMessages.querySelector('.chat-welcome');
+    if (welcome) {
+    welcome.remove();
+    console.log('Removed welcome message');
+    }
+    // Create message element
+    const messageEl = document.createElement('div');
+    messageEl.className = `chat-message ${role}`;
 
-// Avatar
-const avatar = document.createElement('div');
-avatar.className = `chat-avatar ${role}`;
-avatar.textContent = role === 'user' ? '🧑‍💼' : '🧁';
-// Bubble
-const bubble = document.createElement('div');
-bubble.className = 'chat-bubble';
+    // Avatar
+    const avatar = document.createElement('div');
+    avatar.className = `chat-avatar ${role}`;
+    avatar.textContent = role === 'user' ? '🧑‍💼' : '🧁';
+    // Bubble
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
 
-// Content - render markdown for assistant, plain text for user.
-const bubbleContent = document.createElement('div');
-bubbleContent.className = 'chat-bubble-content';
+    // Content - render markdown for assistant, plain text for user.
+    const bubbleContent = document.createElement('div');
+    bubbleContent.className = 'chat-bubble-content';
 
-// Handle empty content
-if (!content || content.trim().length === 0) {
-    console.warn('Empty content received for chat message');
-    content = role === 'assistant' ? 'No response generated.' : '';
-}
+    // Handle empty content
+    if (!content || content.trim().length === 0) {
+        console.warn('Empty content received for chat message');
+        content = role === 'assistant' ? 'No response generated.' : '';
+    }
 
-if (role === 'assistant') {
-try {
-// Check if marked is available
-if (typeof marked ==='undefined') {
-console.error('marked.js not loaded!');
-bubbleContent.innerHTML = `<p>${DOMPurify.sanitize(content)}</p>`;
-} else {
-// Render markdown with marked.js and sanitize
-console.log(' Rendering markdown, length:', content.length);
-// Clean anchor IDs before rendering
-const cleanedContent = content.replace(/\{#[^}]+\}/g, '');
-const rawHtml = marked.parse(cleanedContent);
-console. log(' Parsed HTML length:', rawHtml?.length);
-bubbleContent.innerHTML = DOMPurify.sanitize(rawHtml, {
-ADD_ATTR: ['target', 'rel', 'class'],
-ALLOWED_TAGS: ['p', 'br','strong', 'em', 'code', 'pre!', 'a', 'ul', 'ol', 'li',
-'h1', 'h2','h3', 'h4', 'h5', 'h6', 'blockquote', 'div', 'span', 'table',
-'thead', 'tbody', 'tr', 'th', 'td', 'hr']
-});
-console. log(' Sanitized and set innerHTML');
-}
-} catch (error) {
-console.error('Error rendering markdown:', error);
-// Fallback: show as plain text wrapped in paragraph
-bubbleContent.innerHTML = `<p>${DOMPurify.sanitize(content)}</p>`;
-}
-} else {
-// User messages – simple text with basic HTML escaping
-bubbleContent.textContent = content;
-}
+    if (role === 'assistant') {
+    try {
+    // Check if marked is available
+    if (typeof marked ==='undefined') {
+    console.error('marked.js not loaded!');
+    bubbleContent.innerHTML = `<p>${DOMPurify.sanitize(content)}</p>`;
+    } else {
+    // Render markdown with marked.js and sanitize
+    console.log(' Rendering markdown, length:', content.length);
+    // Clean anchor IDs before rendering
+    const cleanedContent = content.replace(/\{#[^}]+\}/g, '');
+    const rawHtml = marked.parse(cleanedContent);
+    console. log(' Parsed HTML length:', rawHtml?.length);
+    bubbleContent.innerHTML = DOMPurify.sanitize(rawHtml, {
+    ADD_ATTR: ['target', 'rel', 'class'],
+    ALLOWED_TAGS: ['p', 'br','strong', 'em', 'code', 'pre', 'a', 'ul', 'ol', 'li',
+    'h1', 'h2','h3', 'h4', 'h5', 'h6', 'blockquote', 'div', 'span', 'table',
+    'thead', 'tbody', 'tr', 'th', 'td', 'hr']
+    });
+    console. log(' Sanitized and set innerHTML');
+    }
+    } catch (error) {
+    console.error('Error rendering markdown:', error);
+    // Fallback: show as plain text wrapped in paragraph
+    bubbleContent.innerHTML = `<p>${DOMPurify.sanitize(content)}</p>`;
+    }
+    } else {
+    // User messages – simple text with basic HTML escaping
+    bubbleContent.textContent = content;
+    }
 
-bubble.appendChild(bubbleContent);
+    bubble.appendChild(bubbleContent);
 
-// Add sources if assistant message
-if (role === 'assistant' && sources.length > 0) {
-const sourcesEl = document.createElement('div');
-sourcesEl.className = 'chat-sources';
+    // Add sources if assistant message
+    if (role === 'assistant' && sources.length > 0) {
+    const sourcesEl = document.createElement('div');
+    sourcesEl.className = 'chat-sources';
 
-const sourcesTitle = document.createElement('div');
-sourcesTitle.className = 'chat-sources-title';
-sourcesTitle.textContent = ' Sources:';
-sourcesEl.appendChild(sourcesTitle);
+    const sourcesTitle = document.createElement('div');
+    sourcesTitle.className = 'chat-sources-title';
+    sourcesTitle.textContent = ' Sources:';
+    sourcesEl.appendChild(sourcesTitle);
 
-sources.forEach(source => {
-const link = document.createElement('a');
-link.className = 'chat-source-link';
-link.href = source.link || '#';
-link.target = '_blank';
-link.rel= 'noopener noreferrer';
-link.textContent = source.title;
-sourcesEl.appendChild(link);
-});
+    sources.forEach(source => {
+    const link = document.createElement('a');
+    link.className = 'chat-source-link';
+    link.href = source.link || '#';
+    link.target = '_blank';
+    link.rel= 'noopener noreferrer';
+    link.textContent = source.title;
+    sourcesEl.appendChild(link);
+    });
 
-bubble.appendChild(sourcesEl);
-}
+    bubble.appendChild(sourcesEl);
+    }
 
-// Add follow-up suggestions if assistant message
-if (role === 'assistant' && followUps.length > 0) {
-const followUpsEl = document.createElement('div');
-followUpsEl.className = 'chat-followups';
+    // Add follow-up suggestions if assistant message
+    if (role === 'assistant' && followUps.length > 0) {
+    const followUpsEl = document.createElement('div');
+    followUpsEl.className = 'chat-followups';
 
-const followUpsTitle = document.createElement('div');
-followUpsTitle.className = 'chat-followups-title';
-followUpsTitle.textContent = 'Related questions:';
-followUpsEl.appendChild(followUpsTitle);
+    const followUpsTitle = document.createElement('div');
+    followUpsTitle.className = 'chat-followups-title';
+    followUpsTitle.textContent = 'Related questions:';
+    followUpsEl.appendChild(followUpsTitle);
 
-const chipsContainer = document.createElement('div');
-chipsContainer.className = 'chat-followups-chips';
+    const chipsContainer = document.createElement('div');
+    chipsContainer.className = 'chat-followups-chips';
 
-followUps.forEach(suggestion => {
-    const chip = document.createElement('button');
-    chip.className = 'chat-followup-chip';
-    chip.textContent = suggestion;
-    chip.onclick = () => handleFollowUpClick(suggestion);
-    chipsContainer.appendChild(chip);
-});
+    followUps.forEach(suggestion => {
+        const chip = document.createElement('button');
+        chip.className = 'chat-followup-chip';
+        chip.textContent = suggestion;
+        chip.onclick = () => handleFollowUpClick(suggestion);
+        chipsContainer.appendChild(chip);
+    });
 
-followUpsEl.appendChild(chipsContainer);
-bubble.appendChild(followUpsEl);
-}
+    followUpsEl.appendChild(chipsContainer);
+    bubble.appendChild(followUpsEl);
+    }
 
-// Assemble message
-messageEl.appendChild(avatar);
-messageEl.appendChild(bubble);
+    // Assemble message
+    messageEl.appendChild(avatar);
+    messageEl.appendChild(bubble);
 
-chatMessages.appendChild(messageEl);
-console.log(` ${role} message appended to chat, total messages:`, chatMessages.children.length);
+    chatMessages.appendChild(messageEl);
+    console.log(` ${role} message appended to chat, total messages:`, chatMessages.children.length);
 
-// Apply syntax highlighting and add copy buttons
-if (role === 'assistant') {
-applySyntaxHighlighting(bubble);
-addCopyButtonsToCodeBlocks(bubble);
-}
+    // Apply syntax highlighting and add copy buttons
+    if (role === 'assistant') {
+        applySyntaxHighlighting(bubble);
+        addCopyButtonsToCodeBlocks(bubble);
+    }
 
-//-Auto-scroll to bóttom
-chatMessages.scrollTop = chatMessages.scrollHeight;
-console.log(' Auto-scrolled to bottom');
+    //-Auto-scroll to bóttom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    console.log(' Auto-scrolled to bottom');
 
-return messageEl;
+    return messageEl;
 }
 /* ===============================
 * Shows typing indicator
@@ -1939,8 +1942,13 @@ function addCopyButtonsToCodeBlocks(container) {
     const codeBlocks = container.querySelectorAll('pre code');
 
     codeBlocks.forEach((codeBlock) => {
+    console.log('In codeBlocks')
+
     const pre = codeBlock.parentElement;
-    if (pre.querySelector('.copy-btn')) return; // Already has button
+    if (pre.querySelector('copy-btn')) {
+    console.log('Already has button')    
+    return; // Already has button
+    }
 
     const button = document.createElement('button');
     button.className = 'copy-btn';
@@ -1948,15 +1956,15 @@ function addCopyButtonsToCodeBlocks(container) {
     button.title = 'Copy code to clipboard';
 
     button.addEventListener('click', async () => {
-    try {
-        await navigator.clipboard.writeText(codeBlock.textContent);
-    button.textContent = 'Copied!';
-    setTimeout(() =>{
-    button.textContent = 'Copy';
-    }, 2000);
-    } catch (error) {
-    showToast('Failed to copy code', 'error');
-    }
+        try {
+            await navigator.clipboard.writeText(codeBlock.textContent);
+            button.textContent = 'Copied!';
+            setTimeout(() =>{
+            button.textContent = 'Copy';
+            }, 2000);
+        } catch (error) {
+            showToast('Failed to copy code', 'error');
+        }
     });
     pre.style.position = 'relative';
     pre.appendChild(button);
@@ -1966,7 +1974,7 @@ function addCopyButtonsToCodeBlocks(container) {
 function applySyntaxHighlighting(container) {
     if (!window.hljs) return;
 
-    const codeBlocks = container.querySelectorAll('pre code:not(hljs)');
+    const codeBlocks = container.querySelectorAll('pre code:not(.hljs)');
     codeBlocks.forEach((block) => {
         hljs.highlightElement(block);
     });
