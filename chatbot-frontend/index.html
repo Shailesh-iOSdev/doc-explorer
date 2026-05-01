@@ -39,9 +39,12 @@
 <!-- Left Pane: Documentation Explor -->
     <aside class="pane pane-left" role="region" aria-label="Documentation Explorer">
         <div class="pane-header">
-        <h2>Documentation Explorer</h2>
+        <h2>Explorer</h2>
         </div>
             <div class="pane-content">
+                <summary style="cursor: pointer; font-weight: 600; padding: 8px; background:#bbdaf354; border-radius: 4px; margin-bottom: 8px; border: 1px solid #90caf9;">
+                    Load Service Documentation
+                </summary>
                 <div class="form-group">
                     <label for="service-search"> Service (searchable):</label>
                 <div class="searchable-dropdown-container">
@@ -72,7 +75,7 @@
                     </div>
                 </div>
                 <div id="service-preload-progress" class="service-preload-progress" style="margin-top: 8px; margin-bottom: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px">
-                    <small id="service-preload-status" style="display: block; color: #0066cc; line-height: 1.4;">Service section - Ready</small>
+                    <small id="service-preload-status" style="display: block; color: #6199d1fd; line-height: 1.4;">Select service from the dropdown</small>
                 </div>
                 <div class="sections-container">
                     <div id="sections-loading" class="loading-state hidden" role="status" aria-live="polite">
@@ -84,11 +87,11 @@
                         <!-- Sections will be populated here -->
                     </ul>
                 </div>
-                <summary style="cursor: pointer; font-weight: 600; padding: 8px; background:#fff0f0; border-radius: 4px; margin-bottom: 8px; border: 1px solid #ffd0d0;">
+                <summary style="cursor: pointer; font-weight: 600; padding: 8px; background:#bbdaf354; border-radius: 4px; margin-bottom: 8px; border: 1px solid #90caf9;">
                     Pre-load All Documentation
                 </summary>
                 <div style="padding: 8px;">
-                <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.85em;">Load all documentation from all services (slower, 84 services)</p>
+                <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.85em;">Load all documentation from all services (slower, 80+ services)</p>
                 <button id="preload-all-btn" class="btn btn-primary btn-sm">
                     Pre-load All Documentation
                 </button>
@@ -97,7 +100,7 @@
                 </button>
             </div>
             <div id="preload-progress" class="preload-progress" style="margin-top: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px">
-                    <small id="preload-status" style="display: block; color: #0066cc; line-height: 1.4;">All section - Ready</small>
+                    <small id="preload-status" style="display: block; color: #6199d1fd; line-height: 1.4;">Tap on Pre-load All Documentation button</small>
             </div>
             <!-- <details class="copilot-section">
                 <summary style="cursor: pointer; font-weight: 600; padding: 8px; background: #f0f7ff; border-radius: 4px; margin-bottom: 8px; border: 1px solid #d0e7ff;">
@@ -122,14 +125,16 @@
         </div>
     </aside>
     
-<!-- Right Pane: Co-Pilot Panel -->
-    <aside class="pane pane-right" role="complementary" aria-label="Co-Pilot Assistant">
+<!-- Middle Pane: Co-Pilot Panel -->
+    <aside class="pane pane-center" role="complementary" aria-label="Co-Pilot Assistant">
         <div class="pane-header">
-        <h2>Co-Pilot</h2>
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h2>Assistant</h2>
+        </div>
         </div>
         <div class="pane-content">
         <!-- Pre-load Service (Collapsible) -->
-            <details class="copilot-section">
+            <details class="copilot-section hidden">
                 <summary style="cursor: pointer; font-weight: 600; padding: 8px; background: #f0f7ff; border-radius: 4px; margin-bottom: 8px; border: 1px solid #d0e7ff;">
                     Pre-load Service
                 </summary>
@@ -144,7 +149,7 @@
                         Pre-load Current Service
                     </button>
                     <div id="service-preload-progress" class="preload-progress" style="margin-top: 8px; padding: 10px; background: linear-gradient(135deg, #e3f2fd 0%, #f0f7ff 100%); border-radius: 6px; border: 1px">
-                        <small id="service-preload-status" style="display: block; color: #0066cc; line-height: 1.4;">Ready</small>
+                        <small id="service-preload-status" style="display: block; color: #6199d1fd; line-height: 1.4;">Ready</small>
                     </div>
                 </div>
             </details>
@@ -154,7 +159,7 @@
                     Pre-load All Documentation
                 </summary>
                 <div style="padding: 8px;">
-                <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.85em;">Load all documentation from all services (slower, 84 services)</p>
+                <p class="help-text" style="margin: 0 0 8px 0; font-size: 0.85em;">Load all documentation from all services (slower, 80+ services)</p>
                 <button id="preload-all-btn" class="btn btn-primary btn-sm">
                     Pre-load All Documentation
                 </button>
@@ -269,6 +274,31 @@
         </div>
     </aside>
 
+<!-- Right Pane: Chat History -->
+    <aside class="pane pane-right" role="region" aria-label="Chat History">
+        <div class="pane-header">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <h2>Chat History</h2>
+            <button id="new-chat-btn" class="btn-secondary btn-sm" title="Start a new conversation">
+                + New Chat
+            </button>
+        </div>
+        </div>
+        <div class="pane-content">
+        <!-- Chat History -->
+        <detail class="copilot-section" id="chat-history-section" style="display: none;">
+            <summary style="cursor: pointer; font-weight: 600; padding: 8px; background: #f0f7ff; border-radius: 4px; margin-bottom: 8px; border: 1px solid #d0e7ff">
+                History
+            </summary>
+            <div style="padding: 8px; max-height: 200px; overflow-y: auto">
+                <div id="chat-history-list" style="display: flex; flex-direction: column; gap: 6px;">
+                <!-- Chat history items will appear here -->
+                </div>
+            </div>
+        </detail>
+        
+        </div>
+    </aside>
 </main>
     
     <!-- Toast notifications container -->

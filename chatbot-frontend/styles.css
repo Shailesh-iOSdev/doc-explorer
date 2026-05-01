@@ -11,7 +11,7 @@
     --bg-primary: #ffffff;
     --bg-secondary: #f8f9fa;
     --bg-tertiary: #e9ecef;
-    --border-color: |#dee2e6;
+    --border-color: #dee2e6;
     --text-primary: #212529;
     --text-secondary: #6c757d;
     --text-muted: |#adb5bd;
@@ -83,6 +83,13 @@ body {
 }
 
 /* Searchable Dropdowu */
+
+#service-search {
+    border: 2px solid #e0e0e0;
+    transition: border-color 0.2s;
+}
+
+
 .searchable-dropdown-container {
     position: relative;
     margin-bottom: var(--spacing-md);
@@ -91,7 +98,7 @@ body {
 .searchable-dropdown-container .form-control:disabled,
 .searchable-dropdown-container .form-control.disabled {
     background-color: #f5f5f5;
-    color: ■#999;
+    color: #999;
     cursor: not-allowed;
     opacity: 0.7;
 }
@@ -384,8 +391,10 @@ min-width: 250px;
 }
 
 .pane-center {
-flex: 1;
-min-width: 0; /* Allow flex shrink */
+    flex: 1;
+    min-width: 0; /* Allow flex shrink */
+    display: flex;
+    flex-direction: column;
 }
 
 .pane-right {
@@ -1941,81 +1950,155 @@ background: #555;
 /* =============================
 UI SIMPLIFICATION: 2-Pane Layout (Hide Middle Documentation Viewer)
 ===================== */
-
-/* Hide the center documentation viewer pane - not needed for Q&A flow */
-.pane-center {
-    display: none !important;
-}
-
-/* Hide sections list - auto-loading all sections for Q&A */
-.sections-container,
-#load-sections-btn,
-details.copilot-section {
-display: none !important;
-}
-
-/* Expand the right chat pane to use available space */
-.pane-right {
-flex: 1;
-max-width: none;
-width: auto;
-}
-
-/* Adjust left pane width for better balance */
 .pane-left {
+width: 320px;
+min-width: 280px;
+max-width: 360px;
+}
+
+.pane-center {
+flex: 1;
+min-width: 0;
+display: flex;
+flex-direction: column;
+}
+
+.pane-right {
 width: 340px;
 min-width: 300px;
-max-width: 400px;
+max-width: 380px;
+flex: 0 0 340px;
 }
 
-/* Improve chat welcome message for new flow */
-.chat-welcome {
-padding: 40px 20px;
+.pane-center .pane-content,
+.pane-right .pane-content {
+display: flex;
+flex-direction: column;
+gap: var(--spacing-md);
 }
 
-/* Make example questions clickable */
-.chat-welcome li {
-cursor: pointer;
-transition: background-color 0.2s ease;
+.pane-center .pane-content {
+overflow: hidden;
 }
 
-.chat-welcome li:hover {
-background-color: #f0f0f0;
+.pane-history-content {
+overflow: hidden;
 }
 
-.chat-welcome li:hover {
-background-color: #f0f0f0;
+.copilot-chat-panel {
+display: flex;
+flex-direction: column;
+flex: 1;
+min-height: 0;
+margin-bottom: 0;
+padding-bottom: 0;
+border-bottom: none;
 }
 
-/* Better service info display in left pane */
+.chat-messages {
+flex: 1;
+min-height: 0;
+}
+
+.chat-history-section {
+display: block;
+height: 100%;
+min-height: 0;
+}
+
+.chat-history-list {
+display: flex;
+flex-direction: column;
+gap: 8px;
+height: 100%;
+overflow-y: auto;
+padding-right: 4px;
+}
+
 #service-selected {
-margin-top: 12px;
+    margin-top: 12px;
 padding: 12px;
 background: #e3f2fd;
 border-radius: 6px;
 border-left: 3px solid var(--primary-color);
 }
 
-/* Update chat help text for simplified flow */
 #chat-help-text {
 margin-top: 8px;
 font-size: 0.85em;
 color: #666;
 }
 
-/* Responsive: Stack on mobile */
-@media (max-width: 768px) {
+@media (max-width: 1100px) {
 .app-container {
 flex-direction: column;
 }
-.pane-left {
+
+.pane-left,
+.pane-center,
+.pane-right {
 width: 100%;
+min-width: 0;
 max-width: none;
-height: auto;
+flex: none;
+}
+
+.pane-left,
+.pane-center {
 border-right: none;
 border-bottom: 1px solid var(--border-color);
 }
-.pane-right {
-height: calc(100vh - 300px);
+.pane-center {
+min-height: 60vh;
 }
+.pane-right {
+min-height: 240px;
+}
+
+.chat-history-list {
+max-height: 240px;
+}
+}
+
+.chat-history-item {
+padding: 8px;
+background: #f8f9fa;
+border: 1px solid #e0e0e0;
+border-radius: 4px;
+cursor: pointer;
+transition: all 0.2s;
+font-size: 0.85em;
+}
+
+.chat-history-item:hover {
+background: #e3f2fd;
+border-color: #90caf9;
+}
+
+.chat-history-item-title {
+font-weight: 600;
+color: #0066cc;
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+margin-bottom: 2px;
+}
+
+.chat-history-item-meta {
+font-size: 0.75em;
+color: #999;
+}
+
+.chat-history-item-delete {
+float: right;
+background: none;
+border: none;
+color: #666;
+cursor: pointer;
+padding: 0 4px;
+font-size: 1.lem;
+}
+
+.chat-history-item-delete:hover {
+color:#d32f2f;
 }

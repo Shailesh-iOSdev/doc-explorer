@@ -10,6 +10,9 @@ const VECTOR_SEARCH_BASE = window.__VECTOR_SEARCH_BASE__ || 'http://localhost:80
 const DEFAULT_SERVICE = 'mastercard-documentation';
 const REQUEST_TIMEOUT = 900000; // 15 seconds
 
+// Chat Storage Management
+const CHATS_STORAGE_KEY = 'doc_explorer_chats';
+const CURRENT_CHAT_KEY = 'doc_explorer_current_chat';
 
 // State Management
 const state = {
@@ -1099,8 +1102,8 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
 
             console.log('conversation history length - ',state.conversationHistory.length)
             const aiAnswer = await callAIService(question, fullAnswer ,[], state.conversationHistory);
-            appendToConversation('user', question);
-            appendToConversation('assistant', aiAnswer);
+            //appendToConversation('user', question);
+            //appendToConversation('assistant', aiAnswer);
             // Hide typing and show answer
             hideTypingIndicator();
             addChatMessage('assistant', aiAnswer, sources, followUps);
@@ -1474,8 +1477,8 @@ async function handleAskQuestionGlobal(question, documentationPool, scope) {
         console.log('conversation history length - ',state.conversationHistory.length)
 
         const aiAnswer = await callAIService(question, fullAnswer, [], state.conversationHistory);
-        appendToConversation('user', question);
-        appendToConversation('assistant', aiAnswer);
+        //appendToConversation('user', question);
+        //appendToConversation('assistant', aiAnswer);
         // Hide typing and show answer
         hideTypingIndicator();
         addChatMessage('assistant', aiAnswer, sources, followUps);
@@ -1783,7 +1786,7 @@ async function handleAskQuestionGlobalVersion1(question, documentationPool, scop
     }
 }
 
-function addChatMessage(role, content, sources = [], followUps = []) {
+function displayChatMessage(role, content, sources = [], followUps = []) {
     console.log(` Adding ${role} message:`, content?.substring(0, 100));
 
     const chatMessages = document.getElementById('chat-messages');
@@ -1919,6 +1922,154 @@ function addChatMessage(role, content, sources = [], followUps = []) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
     console.log(' Auto-scrolled to bottom');
 
+    return messageEl;
+}
+
+function addChatMessage(role, content, sources = [], followUps = []) {
+    console.log(` Adding ${role} message:`, content?.substring(0, 100));
+
+    const chatMessages = document.getElementById('chat-messages');
+
+    if (!chatMessages){
+    console.error('chat-messages element not found!');
+    return null;
+    }
+
+    // Remove welcome message if present
+    const welcome = chatMessages.querySelector('.chat-welcome');
+    if (welcome) {
+    welcome.remove();
+    console.log('Removed welcome message');
+    }
+    // Create message element
+    const messageEl = document.createElement('div');
+    messageEl.className = `chat-message ${role}`;
+
+    // Avatar
+    const avatar = document.createElement('div');
+    avatar.className = `chat-avatar ${role}`;
+    avatar.textContent = role === 'user' ? '🧑‍💼' : '🧁';
+    // Bubble
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble';
+
+    // Content - render markdown for assistant, plain text for user.
+    const bubbleContent = document.createElement('div');
+    bubbleContent.className = 'chat-bubble-content';
+
+    // Handle empty content
+    if (!content || content.trim().length === 0) {
+        console.warn('Empty content received for chat message');
+        content = role === 'assistant' ? 'No response generated.' : '';
+    }
+
+    if (role === 'assistant') {
+    try {
+    // Check if marked is available
+    if (typeof marked ==='undefined') {
+    console.error('marked.js not loaded!');
+    bubbleContent.innerHTML = `<p>${DOMPurify.sanitize(content)}</p>`;
+    } else {
+    // Render markdown with marked.js and sanitize
+    console.log(' Rendering markdown, length:', content.length);
+    // Clean anchor IDs before rendering
+    const cleanedContent = content.replace(/\{#[^}]+\}/g, '');
+    const rawHtml = marked.parse(cleanedContent);
+    console. log(' Parsed HTML length:', rawHtml?.length);
+    bubbleContent.innerHTML = DOMPurify.sanitize(rawHtml, {
+    ADD_ATTR: ['target', 'rel', 'class'],
+    ALLOWED_TAGS: ['p', 'br','strong', 'em', 'code', 'pre', 'a', 'ul', 'ol', 'li',
+    'h1', 'h2','h3', 'h4', 'h5', 'h6', 'blockquote', 'div', 'span', 'table',
+    'thead', 'tbody', 'tr', 'th', 'td', 'hr']
+    });
+    console. log(' Sanitized and set innerHTML');
+    }
+    } catch (error) {
+    console.error('Error rendering markdown:', error);
+    // Fallback: show as plain text wrapped in paragraph
+    bubbleContent.innerHTML = `<p>${DOMPurify.sanitize(content)}</p>`;
+    }
+    } else {
+    // User messages – simple text with basic HTML escaping
+    bubbleContent.textContent = content;
+    }
+
+    bubble.appendChild(bubbleContent);
+
+    // Add sources if assistant message
+    if (role === 'assistant' && sources.length > 0) {
+    const sourcesEl = document.createElement('div');
+    sourcesEl.className = 'chat-sources';
+
+    const sourcesTitle = document.createElement('div');
+    sourcesTitle.className = 'chat-sources-title';
+    sourcesTitle.textContent = ' Sources:';
+    sourcesEl.appendChild(sourcesTitle);
+
+    sources.forEach(source => {
+    const link = document.createElement('a');
+    link.className = 'chat-source-link';
+    link.href = source.link || '#';
+    link.target = '_blank';
+    link.rel= 'noopener noreferrer';
+    link.textContent = source.title;
+    sourcesEl.appendChild(link);
+    });
+
+    bubble.appendChild(sourcesEl);
+    }
+
+    // Add follow-up suggestions if assistant message
+    if (role === 'assistant' && followUps.length > 0) {
+    const followUpsEl = document.createElement('div');
+    followUpsEl.className = 'chat-followups';
+
+    const followUpsTitle = document.createElement('div');
+    followUpsTitle.className = 'chat-followups-title';
+    followUpsTitle.textContent = 'Related questions:';
+    followUpsEl.appendChild(followUpsTitle);
+
+    const chipsContainer = document.createElement('div');
+    chipsContainer.className = 'chat-followups-chips';
+
+    followUps.forEach(suggestion => {
+        const chip = document.createElement('button');
+        chip.className = 'chat-followup-chip';
+        chip.textContent = suggestion;
+        chip.onclick = () => handleFollowUpClick(suggestion);
+        chipsContainer.appendChild(chip);
+    });
+
+    followUpsEl.appendChild(chipsContainer);
+    bubble.appendChild(followUpsEl);
+    }
+
+    // Assemble message
+    messageEl.appendChild(avatar);
+    messageEl.appendChild(bubble);
+
+    chatMessages.appendChild(messageEl);
+    console.log(` ${role} message appended to chat, total messages:`, chatMessages.children.length);
+
+    // Apply syntax highlighting and add copy buttons
+    if (role === 'assistant') {
+        applySyntaxHighlighting(bubble);
+        addCopyButtonsToCodeBlocks(bubble);
+    }
+
+    //-Auto-scroll to bóttom
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    console.log(' Auto-scrolled to bottom');
+ 
+    // Store message in history
+    state.conversationHistory.push({
+    role,
+    content,
+    sources,
+    followUps
+    });
+    // Auto-save to localStorage
+    autoSaveChat();
     return messageEl;
 }
 /* ===============================
@@ -2670,6 +2821,255 @@ async function vectorSearch(query, topK = 5, threshold = 0.25) {
 }
 
 
+// Get all stored chats
+function getAllChats() {
+    try {
+        const chats = localStorage.getItem(CHATS_STORAGE_KEY)
+        return chats ? JSON.parse(chats) : {};
+    } catch (error) {
+        console.error('Error loading chats:', error);
+        return {};
+    }
+}
+
+// Save a chat
+function saveChat(chatId, chatData) {
+    console.log('Save chat title', chatData.title);
+    console.log('Save chat messages', chatData.messages.length);
+    try {
+        const allChats = getAllChats();
+        allChats[chatId] = {
+            id: chatId,
+            title: chatData.title || 'Untitled Chat',
+            service: chatData.service || state.currentService,
+            section: chatData.section || state.currentSection?.id,
+            messages: chatData.messages || state.conversationHistory,
+            createdAt: chatData.createdAt || new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        console.log('All chat messages count', allChats.length);
+
+        localStorage.setItem(CHATS_STORAGE_KEY, JSON.stringify(allChats));
+        localStorage.setItem(CURRENT_CHAT_KEY, chatId);
+        return allChats[chatId];
+    } catch (error) {
+        console.error('Error saving chat:', error);
+        showToast('Failed to save chat', 'error');
+        return null;
+    }
+}
+
+// Get current chat
+function getCurrentChat() {
+    const chatId = localStorage.getItem(CURRENT_CHAT_KEY);
+    if (!chatId) return null;
+
+    const allChats = getAllChats();
+    return allChats [chatId] || null;
+}
+
+// Create a new chat
+function createNewChat() {
+    const chatId = 'chat_'+ Date.now() +'' + Math.random().toString(36).substr(2, 9);
+    console.log('Created new chat with chatid', chatId);
+    const newChat = {
+        id: chatId,
+        title: 'New Chat',
+        service: state.currentService,
+        section: state.currentSection?.id || null,
+        messages: [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+    };
+
+    saveChat(chatId, newChat);
+    clearChat(); // Clear the UI
+    state.conversationHistory = [];
+
+    showToast('New chat created', 'success');
+    updateChatHistoryUI();
+    return newChat;
+}
+// Delete a chat
+function deleteChat(chatId) {
+    if (!confirm('Delete this chat? This cannot be undone.')){
+    return;
+    }
+    try {
+        const allChats = getAllChats();
+        delete allChats[chatId];
+        localStorage.setItem(CHATS_STORAGE_KEY, JSON.stringify(allChats));
+
+        // If deleted chat was current, create new one
+        if (localStorage.getItem(CURRENT_CHAT_KEY) === chatId) {
+        createNewChat();
+        }
+
+        updateChatHistoryUI();
+        showToast('Chat deleted', 'success');
+    } catch (error) {
+        console.error('Error deleting chat:', error);
+        showToast('Failed to delete chat','error');
+    }
+}
+
+// Load a chat
+function loadChat(chatId) {
+    const allChats = getAllChats();
+    const chat = allChats [chatId];
+
+    if (!chat) {
+    showToast('Chat not found', 'error');
+    return;
+    }
+
+    // Load the service and section
+    if (chat.service) {
+    state.currentService = chat.service;
+    }
+
+    if (chat.section) {
+        // Find and select the section
+        const sectionIndex = state.sections.findIndex(s => s.id === chat.section);
+        if (sectionIndex >= 0) {
+            selectSection(sectionIndex);
+        }
+    }
+
+    // Load conversation history
+    state.conversationHistory = chat.messages || [];
+
+    // Update current chat
+    localStorage.setItem(CURRENT_CHAT_KEY, chatId);
+
+    // Render messages
+    renderChatMessages();
+
+    showToast(`Loaded: ${chat.title}`, 'success');
+    updateChatHistoryUI();
+}
+
+// Render all chat messages
+function renderChatMessages() {
+    const chatMessages = document.getElementById('chat-messages');
+    if (state.conversationHistory.length === 0) {
+        clearChat();
+        return;
+    }
+
+    chatMessages.innerHTML = ''; // Clear existing messages
+
+    state.conversationHistory.forEach(msg => {
+        displayChatMessage(msg.role, msg.content, msg.sources || [], msg.followUps || []);
+    });
+}
+
+// // Update chat history UI
+function updateChatHistoryUI() {
+    const historyList = document.getElementById('chat-history-list');
+    const historySection = document.getElementById('chat-history-section');
+    const allChats = getAllChats();
+    const chatIds = Object.keys(allChats);
+    const nonEmptyChatIds = chatIds.filter(id => allChats[id].messages && allChats[id].messages.length > 0);
+
+    if (nonEmptyChatIds.length === 0) {
+    historySection.style.display = 'block';
+    historyList.innerHTML =`<p style="color: #999; text-align: center;"> No chat history yet </p>`;
+    return;
+    }
+
+   
+    historySection.style.display = 'block';
+    historyList.innerHTML = '';
+
+    // Sort by updated date (most recent first)
+    nonEmptyChatIds.sort((a, b) => {
+        const timeA = new Date(allChats[a].updatedAt).getTime();
+    const timeB = new Date(allChats[b].updatedAt).getTime();
+    return timeB - timeA;
+    });
+
+    // Limit to last 10 chats
+    nonEmptyChatIds//.filter(chatId => allChats[chatId].message && allChats[chatId].messages.length > 0)
+    .slice(0, 10)
+    .forEach(chatId => {
+    const chat = allChats [chatId];
+    const item = document.createElement('div');
+    item.className = 'chat-history-item';
+
+    const date = new Date(chat.updatedAt);
+    const timeAgo = getTimeAgo(date);
+
+    item.innerHTML = `
+    <div class="chat-history-item-title">${escapeHtml(chat.title)}</div>
+    <div class="chat-history-item-meta">
+    ${chat.messages.length} messages ${timeAgo}
+    </div>
+    `;
+
+    // Load chat on click
+    item.addEventListener('click', () => {
+    loadChat(chatId);
+    });
+    // Delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'chat-history-item-delete';
+    deleteBtn.innerHTML = 'x';
+    deleteBtn.title = 'Delete chat';
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+    deleteChat(chatId);
+    });
+    item.appendChild(deleteBtn);
+
+    historyList.appendChild(item);
+    });
+}
+
+//Helper: Format time ago
+function getTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'Just now';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+}
+// Helper: Escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+
+//Auto-save chat whenever a message is added
+function autoSaveChat() {
+    const currentChat = getCurrentChat();
+    if (currentChat) {
+        saveChat(currentChat.id, {
+            ...currentChat,
+            messages: state.conversationHistory,
+            title: generateChatTitle()
+        });
+    }
+}
+
+
+// Generate chat title from first message
+function generateChatTitle() {
+    if (state.conversationHistory.length === 0) return 'New Chat';
+
+    const firstUserMessage = state.conversationHistory.find(msg => msg.role === 'user');
+    if (firstUserMessage) {
+        return firstUserMessage.content.substring(0, 50) + (firstUserMessage.content.length > 50 ? '...' : '');
+    }
+    return 'New Chat';
+}
+
 
 /**
 *Initializes the application
@@ -2711,6 +3111,33 @@ async function init() {
     }
     // Setup searchable service dropdown
     setupServiceDropdown();
+
+
+    // Initialize chat system
+    if (Object.keys(getAllChats()).length === 0) {
+    // Create first chat if none exist
+    createNewChat();
+    } else {
+    // Load last used chat
+    const currentChat = getCurrentChat();
+    if (currentChat) {
+    loadChat(currentChat.id);
+    }
+    }
+
+    // Update chat history UI
+    updateChatHistoryUI();
+
+    // New Chat button
+    document.getElementById('new-chat-btn').addEventListener('click', () => {
+    if (state.conversationHistory.length > 0) {
+    if (confirm('Start a new chat? Current conversation will be saved.')) {
+    createNewChat();
+    }
+    } else {
+    createNewChat();
+    }
+    });
 
     // Note: clear-answer-btn and show-code-btn removed in chat UI redesign
     // Chat has its own clear-chat-btn and code is displayed inline
