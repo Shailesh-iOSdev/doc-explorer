@@ -17,6 +17,7 @@ Copilot-style interface for exploring 84 Mastercard API services with instant Qn
 
 # Install all Node.js dependencies
 npm install
+npm install @google/genai #(Use only if you are configuring chat with Google Gemini)
 cd chatbot-backend && npm install &&  cd ..
 cd chatbot-frontend && npm install &&  cd ..
 
