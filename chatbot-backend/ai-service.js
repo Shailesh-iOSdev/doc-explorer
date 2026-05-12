@@ -1,4 +1,6 @@
 //import OpenAI from "openai"; // Required for Azure Open AI
+import { GoogleGenAI } from "@google/genai";
+
 
 const OLLAMA_BASE_URL = 'http://localhost:11434';
 const OLLAMA_NUM_CTX = 2048;
@@ -14,8 +16,13 @@ const AZURE_AI_API_KEY = "YOUR_API_KEY"
 const AZURE_AI_PROVIDER = "Azure Open AI";
 const AZURE_AI_MODEL = "gpt-5.4";
 
-const AI_PROVIDER = OLLAMA_AI_PROVIDER;
-const AI_MODEL = OLLAMA_AI_MODEL;
+const GOOGLE_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent";
+const GOOGLE_AI_API_KEY = "YOUR_API_KEY"
+const GOOGLE_AI_PROVIDER = "Google Gemini";
+const GOOGLE_AI_MODEL = "gemini-3.1-flash-lite-preview";
+
+const AI_PROVIDER = GOOGLE_AI_PROVIDER;
+const AI_MODEL = GOOGLE_AI_MODEL;
 const AI_MAX_TOKENS = parseInt('1024');
 const AI_TEMPERATURE = parseFloat('0.2');
 const MAX_CONTEXT_DOCS = 2;
@@ -113,6 +120,29 @@ async function callAzureOpenAI(messages) {
 
 }
 
+// =======
+// Google Gemini Integration (Remote LLM)
+// ========
+
+async function callGoogleGemini(messages) {
+
+    if (!GOOGLE_ENDPOINT) {
+        throw new Error('Google Gemini endpoint not configured');
+    }
+
+    const ai = new GoogleGenAI({apiKey: GOOGLE_AI_API_KEY});
+
+    const response = await ai.models.generateContent({
+        model: AI_MODEL,
+        contents: messages,
+    });
+    
+    console.log("Chat response:", response.text);
+    return response.text;
+
+
+}
+
 function isCodeRequest(question = "", conversationHistory = []) {
     const text = [question, ...conversationHistory.slice(-3).map(m => m.content || "")]
     .join(" ")
@@ -123,6 +153,9 @@ function isCodeRequest(question = "", conversationHistory = []) {
 
 async function generateAnswer(question, filteredAnswer, context = [], conversationHistory = []) {
     // Build context from documentation
+
+    const isGoogleGeminiMessage = true
+
     const trimmedContext = context
     .slice(0, MAX_CONTEXT_DOCS)
     .map((doc) => ({
@@ -136,12 +169,36 @@ async function generateAnswer(question, filteredAnswer, context = [], conversati
     //conversationHistory.slice(-MAX_HISTORY);
 
     // Construct messages array for the LLM
+    /*
+    if (isGoogleGeminiMessage === true) {
+    const messages = [
+        {
+            role: 'system',
+            parts: [{ text: SYSTEM_PROMPT}]
+        }
+    ];
+    } else {
     const messages = [
         {
             role: 'system',
             content: SYSTEM_PROMPT
         }
     ];
+    }
+    */
+
+   // ===================================================================
+   // Getting ReferenceError: messages not defined so commented above code and declared messages below
+   // For Ollama/AzureAI define messages constant from else block
+   // For Google Gemini use messages constant from if block
+   // ====================================================================
+   const messages = [
+        {
+            role: 'system',
+            parts: [{ text: SYSTEM_PROMPT }]
+        }
+    ];
+
 
 
     // Add context as a system message if available
@@ -158,37 +215,69 @@ async function generateAnswer(question, filteredAnswer, context = [], conversati
 
     const shouldIncludeContext = context.length > 0 && /api|integration|code|error|implement|endpoint|auth|setup|configure/i.test(question);
     if (shouldIncludeContext) {
-        messages.push({
+    if (isGoogleGeminiMessage === true) {
+       messages.push({
+            role: 'system',
+            parts: [{ text: `Documentation: \n\n${contextText}` }]
+        });
+    } else {
+       messages.push({
             role: 'system',
             content: `Documentation: \n\n${contextText}`
         });
     }
+ 
+    }
     // Add conversation history
     if (recentHistory.length > 0) {
         recentHistory.forEach(msg => { 
+            if (isGoogleGeminiMessage === true) {
             messages.push({
-                role: msg.role = 'user' ? 'user' : 'assistant',
-                content: msg.content
-            });
+                    role: msg.role = 'user' ? 'user' : 'assistant',
+                    parts: [{ text: `${msg.content}` }] 
+                });
+               console.log(`${msg.content}`)
+            } else {
+                messages.push({
+                    role: msg.role = 'user' ? 'user' : 'assistant',
+                    content: msg.content
+                });
+            }
         });
     }
 
     if (filteredAnswer) {
+    if (isGoogleGeminiMessage === true) {
+        messages.push({
+            role: 'assistant',
+            parts: [{ text: filteredAnswer }]
+        })
+    } else {
         messages.push({
             role: 'assistant',
             content: filteredAnswer
         })
     }
+    }
 
     // Add current question
-    messages.push({
-    role: 'user',
-    content: question
-    });
+    if (isGoogleGeminiMessage === true) {
+        messages.push({
+            role: 'user',
+            parts: [{ text: question }]
+            });
+    } else {
+        messages.push({
+            role: 'user',
+            content: question
+            });
+    }
+ 
     // Call appropriate AI provider
     // const selectedModel = isCodeRequest(question, conversationHistory) ? AI_CODE_MODEL : AI_MODEL; 
-    let answer = await callOllama(messages);
+    //let answer = await callOllama(messages);
     // let answer = await callAzureOpenAI(messages);
+    let answer = await callGoogleGemini(messages);
 
     return answer;
 
